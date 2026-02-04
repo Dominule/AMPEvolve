@@ -54,7 +54,7 @@ def generate_and_predict():
     df.to_csv(storage_path, index=True)
 
 def execute():
-    climb_high("KRRWRQVMGAFWKIKV", [14, 15], 18, 75, until_finished=True)
+    climb_high("KRRWRQVMGAFWKIKV", [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 18, 75, until_finished=True)
 
 execute()
 

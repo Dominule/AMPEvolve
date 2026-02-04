@@ -12,7 +12,7 @@ def climb_high(seq: str, positions: list[int], num_completions: int, epochs=20, 
     """
     Optimizes peptide sequence with hill climbing.
         Args:
-            seq (str): Peptide sequence (e.g., ADKGAGIISL).
+            seq (str): Peptide sequence (e.g., AWKGAGIISL).
             positions (list[int]): Positions to be modified.
             num_completions (int): Number of seqs to generate.
             epochs (int): Number of epochs. For each epoch, one position is modified.
