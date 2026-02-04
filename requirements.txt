@@ -1,0 +1,7 @@
+pandas
+pathlib
+numpy
+macrel
+onnxruntime
+random
+gzip
