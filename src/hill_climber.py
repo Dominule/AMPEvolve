@@ -8,9 +8,20 @@ from calculator import get_peptide_features
 from predictor import MacrelPredictor
 
 
-def climb_high(seq: str, positions: list[int], num_completions: int, epochs=20) -> str:
+def climb_high(seq: str, positions: list[int], num_completions: int, epochs=20, until_finished=False) -> str:
+    """
+    Optimizes peptide sequence with hill climbing.
+        Args:
+            seq (str): Peptide sequence (e.g., ADKGAGIISL).
+            positions (list[int]): Positions to be modified.
+            num_completions (int): Number of seqs to generate.
+            epochs (int): Number of epochs. For each epoch, one position is modified.
+            until_finished (bool): If true, ignores "epochs" and generates until new sequence is equal to the previous one.
+        Returns:
+            str: Optimalized sequence.
+    """
     counter = 0
-    while counter < epochs:
+    while (counter < epochs) or until_finished:
 
         # Mutants
         all_mutants = []
@@ -35,6 +46,10 @@ def climb_high(seq: str, positions: list[int], num_completions: int, epochs=20) 
         highest_value = df['Pred'].max()
         new_seq = df[df['Pred'] == highest_value]['Sequence'].values[0]
         print(new_seq)
+
+        if until_finished:
+            if new_seq == seq:
+                return seq
 
         seq = new_seq
         counter += 1
