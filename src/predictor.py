@@ -6,7 +6,10 @@ import gzip
 import onnxruntime as ort
 import numpy as np
 
-MODEL_PATH = "../models/macrel.onnx.gz"
+from calculator import get_peptide_features
+
+MODEL_PATH = __file__ + "/../../models/macrel.onnx.gz"
+
 
 class MacrelPredictor:
     def __init__(self, model_path=MODEL_PATH):
@@ -28,8 +31,7 @@ class MacrelPredictor:
         outputs = self._model.run(None, inputs)
         return outputs[1]
 
-
-    def predict_seqs(self, features_list: list) -> list:
+    def predict_seqs(self, features_list: list[np.ndarray]) -> list:
         """
         Predicts peptide properties for a list of feature arrays.
         Args:
@@ -41,3 +43,6 @@ class MacrelPredictor:
         raw_results = self.predict_seq(all_features)
         return [p["AMP"] for p in raw_results]
 
+    def calculate_and_predict(self, sequences: list[str]) -> list[float]:
+        features_list = [get_peptide_features(seq) for seq in sequences]
+        return self.predict_seqs(features_list)
