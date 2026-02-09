@@ -43,6 +43,13 @@ class MacrelPredictor:
         raw_results = self.predict_seq(all_features)
         return [p["AMP"] for p in raw_results]
 
-    def calculate_and_predict(self, sequences: list[str]) -> list[float]:
+    def calculate_and_predict_seqs(self, sequences: list[str]) -> list[float]:
+        """
+        Calculates descriptors and predicts from aa sequences.
+        Args:
+            list of str (seqs)
+        Returns:
+            list of floats (proba of AMP)
+        """
         features_list = [get_peptide_features(seq) for seq in sequences]
         return self.predict_seqs(features_list)

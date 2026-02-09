@@ -21,6 +21,7 @@ Generate and predict:
 """
 
 import pandas as pd
+import loader
 from generator import generate_completions
 from calculator import get_peptide_features
 from predictor import MacrelPredictor
@@ -54,7 +55,23 @@ def generate_and_predict():
     df.to_csv(storage_path, index=True)
 
 def execute():
-    climb_high("KRRWRQVMGAFWKIKV", [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 18, 75, until_finished=True)
+    # climb_high("KRRWRQVMGAFWKIKV", [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 18, 75, until_finished=True) # DNV5 tuning
+
+    # file = "../inputs/selected_by_sam.fasta"
+    # generated = loader.load_fasta(file)
+    file = "../inputs/generated_AMPGen_3.csv"
+    generated = loader.load_csv(file, column_name="Sequence")
+    # generated = "MSFREMLSNSCPRSNGGG"
+    macrel = MacrelPredictor()
+    predictions = macrel.calculate_and_predict_seqs(generated)
+    print(generated)
+    print(predictions)
+
+    # generated = climb_high(generated, [], until_finished=True, mask_all=True)
+    # predictions = macrel.calculate_and_predict_seqs([generated])
+    # print(generated)
+    # print(predictions)
+
 
 execute()
 
