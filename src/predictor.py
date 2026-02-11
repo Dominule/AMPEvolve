@@ -6,7 +6,7 @@ import gzip
 import onnxruntime as ort
 import numpy as np
 
-from calculator import get_peptide_features
+import calculator
 
 MODEL_PATH = __file__ + "/../../models/macrel.onnx.gz"
 
@@ -51,5 +51,5 @@ class MacrelPredictor:
         Returns:
             list of floats (proba of AMP)
         """
-        features_list = [get_peptide_features(seq) for seq in sequences]
+        features_list = [calculator.macrel_descriptors_from_seq(seq) for seq in sequences]
         return self.predict_seqs(features_list)

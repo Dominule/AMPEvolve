@@ -23,28 +23,34 @@ Generate and predict:
 import pandas as pd
 import loader
 from generator import generate_completions
-from calculator import get_peptide_features
+import calculator
+import plotter
 from predictor import MacrelPredictor
 from hill_climber import climb_high
 
 ROOT_PATH = "../"
 
 # --- SETTINGS ---
+sam_1 = "RIKWRVLLYRGHRFAKLGMKVIK"
 dnv5 = "KRRWRNICGLFGKISL"
+melittin = "GIGAVLKVLTTGLPALISWIKRKRQQ"
 positions = [7, 9]
-num_completions = 100   # number of generated sequences
-storage_path = ROOT_PATH + "outputs/dnv5_mutants.csv"
+num_completions = 100   # number of generated sequences for hill_climber
+storage_path_files = ROOT_PATH + "outputs"
+storage_path_plots= ROOT_PATH + "outputs/plots/"
 # ----------------
 
 
 # generate sequences and predict
 def generate_and_predict():
-    # deprecated
+    """
+    An example of generating a new sequences. Deprecated.
+    """
     sequences = generate_completions(dnv5, positions, num_completions=num_completions)
 
     features = []
     for sequence in sequences:
-        feat = get_peptide_features(sequence)
+        feat = calculator.macrel_descriptors_from_seq(sequence)
         features.append(feat)
 
     macrel = MacrelPredictor()
@@ -52,25 +58,22 @@ def generate_and_predict():
 
     d = {"Sequence": sequences, "Macrel_prediction": predictions}
     df = pd.DataFrame(d)
-    df.to_csv(storage_path, index=True)
+    df.to_csv(storage_path_files + "dnv5_mutants.csv", index=True)
 
 def execute():
-    # climb_high("KRRWRQVMGAFWKIKV", [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], 18, 75, until_finished=True) # DNV5 tuning
+    """
+    Example of usage.
+    """
+    seqs = [dnv5, melittin, sam_1]
+    for seq in seqs:
+        calculator.count_helices(seq, verbose=True)
+        result = calculator.calculate_hydrophobic_moment(seq)
+        print(f"Hydrophobic Moment: {result:.3f}")
+        plotter.show_helical_wheel(seq, storage_path_plots + f"{seq}.png")
 
-    # file = "../inputs/selected_by_sam.fasta"
-    # generated = loader.load_fasta(file)
-    file = "../inputs/generated_AMPGen_3.csv"
-    generated = loader.load_csv(file, column_name="Sequence")
-    # generated = "MSFREMLSNSCPRSNGGG"
-    macrel = MacrelPredictor()
-    predictions = macrel.calculate_and_predict_seqs(generated)
-    print(generated)
-    print(predictions)
-
-    # generated = climb_high(generated, [], until_finished=True, mask_all=True)
-    # predictions = macrel.calculate_and_predict_seqs([generated])
-    # print(generated)
-    # print(predictions)
+    # calculation of descriptors
+    # descriptors_df = calculator.peptides_descriptors_from_fasta("../inputs/sequences.fasta")
+    # print(descriptors_df.head(10))
 
 
 execute()

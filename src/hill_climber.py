@@ -4,7 +4,7 @@ Here is code for lead optimization.
 import pandas as pd
 
 from generator import generate_completions
-from calculator import get_peptide_features
+import calculator
 from predictor import MacrelPredictor
 
 
@@ -37,7 +37,7 @@ def climb_high(seq: str, positions: list[int], num_completions=10, epochs=10, ma
         # Features
         features = []
         for seq in seqs:
-            feat = get_peptide_features(seq)
+            feat = calculator.macrel_descriptors_from_seq(seq)
             features.append(feat)
 
         # Predictions
