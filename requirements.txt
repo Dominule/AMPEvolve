@@ -5,3 +5,6 @@ macrel
 onnxruntime
 random
 gzip
+peptides
+Bio
+modlamp
