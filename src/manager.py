@@ -22,7 +22,7 @@ Generate and predict:
 
 import pandas as pd
 import loader
-from generator import generate_completions
+import generator
 import calculator
 import plotter
 from predictor import MacrelPredictor
@@ -34,6 +34,7 @@ ROOT_PATH = "../"
 sam_1 = "RIKWRVLLYRGHRFAKLGMKVIK"
 dnv5 = "KRRWRNICGLFGKISL"
 melittin = "GIGAVLKVLTTGLPALISWIKRKRQQ"
+penetratin = "RQIKIWFQNRRMKWKK"
 positions = [7, 9]
 num_completions = 100   # number of generated sequences for hill_climber
 storage_path_files = ROOT_PATH + "outputs"
@@ -46,7 +47,7 @@ def generate_and_predict():
     """
     An example of generating a new sequences. Deprecated.
     """
-    sequences = generate_completions(dnv5, positions, num_completions=num_completions)
+    sequences = generator.generate_completions(dnv5, positions, num_completions=num_completions)
 
     features = []
     for sequence in sequences:
@@ -64,16 +65,28 @@ def execute():
     """
     Example of usage.
     """
-    seqs = [dnv5, melittin, sam_1]
-    for seq in seqs:
-        calculator.count_helices(seq, verbose=True)
-        result = calculator.calculate_hydrophobic_moment(seq)
-        print(f"Hydrophobic Moment: {result:.3f}")
-        plotter.show_helical_wheel(seq, storage_path_plots + f"{seq}.png")
+    ## AMP Information and helical_wheels
+    # seqs = {dnv5 : "dnv5", melittin : "melittin", sam_1:"sam_1", penetratin : "penetratin"}
+    # for seq, name in seqs.items():
+    #     calculator.alphahelices(seq, verbose=True)
+    #     result = calculator.calculate_hydrophobic_moment(seq)
+    #     print(f"Hydrophobic Moment: {result:.3f}")
+    #     plotter.show_helical_wheel(seq, storage_path_plots + f"{name}.png")
 
-    # calculation of descriptors
+    ## Calculation of descriptors
     # descriptors_df = calculator.peptides_descriptors_from_fasta("../inputs/sequences.fasta")
     # print(descriptors_df.head(10))
+
+    # generating
+    seqs = generator.generate_amphipatic_helices()
+    if not seqs:
+        print("No sequences found.")
+    print(seqs)
+
+    df = calculator.amps_analysis(seqs, verbose=True)
+    # plotter.save_helical_wheels(seqs, storage_path_plots +"generated/")
+
+
 
 
 execute()
