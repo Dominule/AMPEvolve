@@ -11,6 +11,6 @@ def save_helical_wheels(seqs: list[str], path, names=[]):
         names = range(0, len(seqs))
     for seq, name in zip(seqs, names):
         if len(seq)>1:
-            save_helical_wheel(seq, path + f"/seq_{name}")
+            save_helical_wheel(seq, path + f"seq_{name}")
 
 
