@@ -50,7 +50,18 @@ class MacrelPredictor(Predictor):
         """
         all_features = np.vstack(features_list)
         raw_results = self.predict_seq(all_features)
-        return [p["AMP"] for p in raw_results]
+        return [round(p["AMP"], 2) for p in raw_results]
+
+    def calculate_and_predict_seq(self, sequence: str) -> float:
+        """
+        Calculates descriptors and predicts from aa sequence.
+        Args:
+            str (seq)
+        Returns:
+            float (proba of AMP)
+        """
+        features = calculator.macrel_descriptors_from_seq(sequence)
+        return round(self.predict_seq(features)[0]["AMP"], 3)
 
     def calculate_and_predict_seqs(self, sequences: list[str]) -> list[float]:
         """
