@@ -7,7 +7,9 @@ from macrel.macrel_features import compute_all
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 import peptides
 import loader
+import predictor
 from modlamp.descriptors import GlobalDescriptor, PeptideDescriptor
+
 
 
 def macrel_descriptors_from_seq(sequence: str) -> np.ndarray:
@@ -70,15 +72,15 @@ def charge(seq, amide=False) -> float:
     return float(calc.descriptor[0][0])
 
 def amps_analysis(seqs: list[str], verbose=False) -> pd.DataFrame:
-    hm = []
-    h = []
-    c = []
-    ah = []
+    hm = []     # hydrophobic moment
+    h = []      # hydrophobicity
+    c = []      # charge
+    ah = []     # alphahelices
     for seq in seqs:
-        hm.append(hydrophobic_moment(seq))
-        h.append(hydrophobicity(seq))
-        c.append(charge(seq))
-        ah.append(alphahelices(seq))
+        hm.append(round(hydrophobic_moment(seq), 2))
+        h.append(round(hydrophobicity(seq), 2))
+        c.append(round(charge(seq), 2))
+        ah.append(round(alphahelices(seq), 2))
     analyzed = {
         "Sequence" : seqs,
         "Hydrophobic moment" : hm,
@@ -91,6 +93,65 @@ def amps_analysis(seqs: list[str], verbose=False) -> pd.DataFrame:
 
     return pd.DataFrame(analyzed)
 
+
+
+def amp_killer_score(seq: str) -> float:
+    """
+    Calculates composite fitness based on Macrel and physical features.
+    Bonuses for:
+    - Moment (0.4-0.59),
+    - Ratio (0.5-0.7),
+    - Charge (+5 to +7),
+    - Centered P if present,
+    - R over K preference.
+    """
+    # 1. Macrel Prediction (The biggest weight)
+    macrel = predictor.MacrelPredictor()
+    feat = macrel_descriptors_from_seq(seq)
+    # Ensure this returns the probability (0.0 to 1.0)
+    macrel_prob = macrel.calculate_and_predict_seq(seq)
+
+    # 2. Physical Descriptors (The nudges)
+    pep = PeptideDescriptor(seq, 'eisenberg')
+    pep.calculate_moment(window=1000, angle=100)
+    uH = pep.descriptor[0][0]   # moment
+    glob = GlobalDescriptor(seq)
+    glob.calculate_charge(ph=7.4)
+    z = glob.descriptor[0][0]   # charge
+    glob.hydrophobic_ratio()
+    h_ratio = glob.descriptor[0][0] # ratio
+
+    # --- WEIGHTING LOGIC ---
+    # Multiplier of 2.0 ensures Macrel dominates the physical bonuses
+    score = macrel_prob * 2.0
+
+    # 1. Hydrophobic Moment (0.4 - 0.59)
+    if 0.4 <= uH <= 0.59:
+        score += 0.15
+    elif uH > 0.59:
+        score -= (uH - 0.59)
+
+    # 2. Hydrophobic Ratio (0.5 - 0.7)
+    if 0.5 <= h_ratio <= 0.7:
+        score += 0.1
+
+    # 3. Net Charge (+5 to +7)
+    if 5 <= z <= 7:
+        score += 0.1
+
+    # 4. Proline Centering
+    pro_pos = seq.find('P')
+    if pro_pos != -1:
+        rel_pos = (pro_pos + 1) / len(seq)
+        centering = 1.0 - abs(0.5 - rel_pos) * 2
+        score += (centering * 0.1)
+
+    # 5. R over K Preference
+    r_count = seq.count('R')
+    k_count = seq.count('K')
+    score += (r_count * 0.01) - (k_count * 0.005)
+
+    return score
 
 
 
