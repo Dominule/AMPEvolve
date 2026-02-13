@@ -68,6 +68,8 @@ class HillClimber(BaseModel):
                 step_results.append(result)
         return HillClimbingResults(results=step_results)
 
+    def optimize_sequence_just_string(self, sequence: str, verbose=False) -> str:
+        return self.optimize_sequence(sequence, verbose).results[-1].sequence
 
 if __name__ == '__main__':
     hill_climber = HillClimber()
