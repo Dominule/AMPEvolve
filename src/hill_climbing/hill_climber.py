@@ -53,7 +53,7 @@ class HillClimber(BaseModel):
                     best_seq = new_seq
         return HillClimbingResult(sequence=best_seq, score=best_score, improvement=best_score - original_score)
 
-    def fit(self, sequence: str, verbose=False) -> HillClimbingResults:
+    def optimize_sequence(self, sequence: str, verbose=False) -> HillClimbingResults:
         best_sequence = sequence
         step_results = []
         for epoch in range(self.epochs):
@@ -71,7 +71,7 @@ class HillClimber(BaseModel):
 
 if __name__ == '__main__':
     hill_climber = HillClimber()
-    results = [hill_climber.fit("".join(random.choices(aabet_without_C, k=random.randint(18, 25)))) for _ in
+    results = [hill_climber.optimize_sequence("".join(random.choices(aabet_without_C, k=random.randint(18, 25)))) for _ in
                tqdm(list(range(250)))]
     with open("hill_climber_results.json", "w") as f:
         json.dump(results, f, default=to_jsonable_python, indent=2)
