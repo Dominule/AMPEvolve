@@ -3,15 +3,24 @@ Loads macrel onnx model and predicts peptide properties.
 """
 
 import gzip
+from abc import abstractmethod, ABC
+
 import onnxruntime as ort
 import numpy as np
+from pathlib import Path
 
 import calculator
 
-MODEL_PATH = __file__ + "/../../models/macrel.onnx.gz"
+MODEL_PATH = Path(__file__).parents[1] / "models/macrel.onnx.gz"
 
 
-class MacrelPredictor:
+class Predictor(ABC):
+    @abstractmethod
+    def calculate_and_predict_seqs(self, sequences: list[str]) -> list[float]:
+        pass
+
+
+class MacrelPredictor(Predictor):
     def __init__(self, model_path=MODEL_PATH):
         with gzip.open(model_path, 'rb') as f:
             model_bytes = f.read()
