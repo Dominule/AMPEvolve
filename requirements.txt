@@ -3,8 +3,9 @@ pathlib
 numpy
 macrel
 onnxruntime
-random
-gzip
+pydantic
+matplotlib
+rdkit
 peptides
 Bio
 modlamp
