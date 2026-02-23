@@ -1,18 +1,22 @@
-import random
-
 import json
+import random
+from pathlib import Path
+
+import argparse
+from joblib import Parallel, delayed
 from pydantic import BaseModel, Field
 from pydantic_core import to_jsonable_python
-from tqdm import tqdm
 
+from calculator import AMPKillerPredictor
 from generator import aabet_without_C
+from hill_climbing.json_to_fasta import json_to_fasta
 from predictor import MacrelPredictor, Predictor
 
 
 class HillClimbingResult(BaseModel):
     sequence: str
     score: float = 0.0
-    improvement: float = Field(default=0.0, ge=0.0)
+    improvement: float = 0.0
 
 
 class HillClimbingResults(BaseModel):
@@ -55,7 +59,10 @@ class HillClimber(BaseModel):
 
     def optimize_sequence(self, sequence: str, verbose=False) -> HillClimbingResults:
         best_sequence = sequence
-        step_results = []
+        step_results = [HillClimbingResult(sequence=sequence,
+                                           score=self.scorer.calculate_and_predict_seqs([sequence])[0],
+                                           improvement=0) ]
+
         for epoch in range(self.epochs):
             result = self.do_one_step(best_sequence)
             best_sequence = result.sequence
@@ -71,21 +78,56 @@ class HillClimber(BaseModel):
     def optimize_sequence_just_string(self, sequence: str, verbose=False) -> str:
         return self.optimize_sequence(sequence, verbose).results[-1].sequence
 
+
 if __name__ == '__main__':
-    hill_climber = HillClimber()
-    results = [hill_climber.optimize_sequence("".join(random.choices(aabet_without_C, k=random.randint(18, 25)))) for _ in
-               tqdm(list(range(250)))]
-    with open("hill_climber_results.json", "w") as f:
+    parser = argparse.ArgumentParser(description="Hill Climbing Optimization for Peptide Sequences")
+    parser.add_argument('--input_seqs', type=str, help='A fasta file with starting sequences')
+    parser.add_argument('--same_as', type=str,
+                        help='JSON file containing list of HillClimbingResults to use first sequence from each')
+    parser.add_argument('--num_sequences', type=int, default=5,
+                        help='Number of sequences to generate (ignored if --input_seqs or --same_as provided)')
+    parser.add_argument('--min_length', type=int, default=18,
+                        help='Minimum length of generated sequences (ignored if --input_seqs or --same_as provided)')
+    parser.add_argument('--max_length', type=int, default=25,
+                        help='Maximum length of generated sequences (ignored if --input_seqs or --same_as provided)')
+    parser.add_argument('--output', type=str, default="data", help='Output folder path for results')
+
+    args = parser.parse_args()
+
+    # Determine starting sequences
+    starting_sequences = []
+
+    if args.input_seqs:
+        # Load sequences from fasta file
+        with open(args.input_seqs, 'r') as f:
+            starting_sequences = [line.strip() for line in f if line.strip() if line[0]!=">"]
+    elif args.same_as:
+        # Load sequences from JSON file of HillClimbingResults
+        with open(args.same_as, 'r') as f:
+            results_list = json.load(f)
+            for result_data in results_list:
+                if isinstance(result_data, dict) and 'results' in result_data and result_data['results']:
+                    starting_sequences.append(result_data['results'][0]['sequence'])
+    else:
+        # Generate random sequences
+        starting_sequences = [
+            "".join(random.choices(aabet_without_C, k=random.randint(args.min_length, args.max_length)))
+            for _ in range(args.num_sequences)
+        ]
+
+    hill_climber = HillClimber(scorer=AMPKillerPredictor())
+
+    results = Parallel(n_jobs=-1, backend="threading", verbose=10)(
+        delayed(hill_climber.optimize_sequence)(seq)
+        for seq in starting_sequences
+    )
+
+    output_file_name = f"hill_climber_results_{hill_climber.scorer.__class__.__name__}.json"
+    outputs_directory = Path(args.output or ".")
+    outputs_directory.mkdir(exist_ok=True, parents=True)
+    results_file_path = outputs_directory / output_file_name
+
+    with open(results_file_path, "w") as f:
         json.dump(results, f, default=to_jsonable_python, indent=2)
-
-    print(f"Saved {len(results)} results to hill_climber_results.json")
-
-# Epoch 1: Best sequence score: 0.38 (FHGLWQIGVQTYPPKSAYIA)
-# Epoch 2: Best sequence score: 0.59 (FHGLWRIGVQTYPPKSAYIA)
-# Epoch 3: Best sequence score: 0.78 (FHGLWRIGVKTYPPKSAYIA)
-# Epoch 4: Best sequence score: 0.88 (FLGLWRIGVKTYPPKSAYIA)
-# Epoch 5: Best sequence score: 0.95 (FLGLWRIGVKIYPPKSAYIA)
-# Epoch 6: Best sequence score: 0.96 (FVGLWRIGVKIYPPKSAYIA)
-# Epoch 7: Best sequence score: 0.98 (FVGLWRIGVKIYPPKSAGIA)
-# Epoch 8: Best sequence score: 0.99 (FVGLMRIGVKIYPPKSAGIA)
-# Epoch 9: Best sequence score: 1.00 (FVGLMRIFVKIYPPKSAGIA)
+    json_to_fasta(results_file_path, results_file_path.with_suffix(".fasta"))
+    print(f"Saved {len(results)} results to {results_file_path.resolve()}")
