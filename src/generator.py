@@ -79,3 +79,14 @@ def generate_completions(sequence: str, masked_positions: list[int], num_complet
             completion[pos] = new_aa
         completions.append("".join(completion))
     return completions
+
+
+def generate_all_neighbors(peptide: str, alphabet: str = aabet_without_C) -> list[str]:
+    neighbors = []
+    for i in range(len(peptide)):
+        neighbors.append(peptide[:i] + peptide[i + 1:])
+        for aa in alphabet:
+            if aa != peptide[i]:
+                neighbors.append(peptide[:i] + aa + peptide[i + 1:])
+                neighbors.append(peptide[:i] + aa + peptide[i:])
+    return neighbors
